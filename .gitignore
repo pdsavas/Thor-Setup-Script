@@ -1,0 +1,18 @@
+# Your own files: games, BIOS, keys and downloaded APKs never go in the repo.
+apks/*
+!apks/.keep
+bios/*
+!bios/.keep
+roms/*
+!roms/.keep
+
+# Created by the script while it runs
+.thor_state.json
+*.part
+__pycache__/
+*.pyc
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
