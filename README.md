@@ -29,13 +29,16 @@ Snapdragon 8 Gen 2.
 | [Eden](https://eden-emu.dev) | Switch | git.eden-emu.dev | latest stable, Standard APK |
 | [hakuX](https://github.com/rfandango/hakuX) | Original Xbox | GitHub releases | latest APK |
 | [SteamDeck](https://github.com/The412Banner/winlator-contents) | Steam / Windows PC games | GitHub releases | newest `SteamDeck-<version>` release |
+| [DroidDeck](https://github.com/Droid-Deck/DroidDeck) | Steam / PC games, SteamOS-style | GitHub releases | latest APK (the plain one, not `-antutu`, `-ludashi` or `-pubg`) |
 
 Every app is downloaded fresh from its official source when you install or update it. This
 repository doesn't contain any APKs.
 
 > **Look-alike warning:** the official Eden builds are only on eden-emu.dev, and the official
 > hakuX builds are only on [rfandango/hakuX's releases](https://github.com/rfandango/hakuX/releases).
-> Other GitHub repos with those names are forks or fakes.
+> DroidDeck's are only on [Droid-Deck/DroidDeck's releases](https://github.com/Droid-Deck/DroidDeck/releases)
+> (its official website is droid-deck.dev; droiddeck.org, droid-deck.com and droiddeck.wiki are
+> unofficial). Other GitHub repos with those names are forks, fakes or unrelated apps.
 
 ## Requirements
 
@@ -76,7 +79,7 @@ For full step-by-step instructions, see the
 
 ```
 ╔════════════════════════════════════════════════════════════════════════╗
-║                       AYN Thor Setup Helper 4.1                        ║
+║                       AYN Thor Setup Helper 4.2                        ║
 ╠════════════════════════════════════════════════════════════════════════╣
 ║ Device        AYN Thor - Android 13                                    ║
 ║ SD card       /storage/1A2B-3C4D - 409.0 GB free of 476.7 GB           ║
@@ -145,6 +148,10 @@ The original one-shot options still work, and passing any of them skips the menu
   XISO files in `roms/xbox`. iiSU doesn't list original Xbox yet, so start those games from hakuX.
 - **SteamDeck** is early, single-developer software. After installing, open it, tap *Install Linux
   runtime* (about 790 MB), then *Play* to download Steam and sign in.
+- **DroidDeck** is another way to play Steam and PC games, with a SteamOS-style Gaming Mode and
+  a Linux desktop. You can install it alongside SteamDeck or instead of it. It needs about 4 GB
+  free. On Android 14 and newer, first turn on *Disable child process restrictions* in Developer
+  options. Then open DroidDeck, install the Linux runtime, press *Play* and sign in to Steam.
 - **Eden** needs your own `prod.keys` and firmware installed from inside Eden.
 - If D-pad hotkeys don't work in RetroArch, change `DPAD` near the top of `thor_setup.py` to
   `"19", "20", "21", "22"` and reapply the RetroArch settings.

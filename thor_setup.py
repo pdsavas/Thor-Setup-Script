@@ -2,7 +2,7 @@
 """
 thor_setup.py - Setup helper for an AYN Thor Pro (or most Android handhelds),
 run from a PC over ADB. Based on the TechDweeb Android handheld guide, using
-the iiSU frontend, ARMSX2 (PS2), Eden (Switch) and SteamDeck (Steam + Proton).
+the iiSU frontend, ARMSX2 (PS2), Eden (Switch), SteamDeck and DroidDeck (Steam + Proton).
 
 Run it with no options for a KIAUH-style menu:
 
@@ -43,7 +43,7 @@ APK_DIR = HERE / "apks"
 BIOS_DIR = HERE / "bios"
 ROMS_DIR = HERE / "roms"
 STATE_FILE = HERE / ".thor_state.json"
-VERSION = "4.1"
+VERSION = "4.2"
 
 # =====================================================================
 #  Tweakables
@@ -110,7 +110,7 @@ EMU_PATTERN = re.compile(
     r"retroarch|dolphin|ppsspp|citra|lime3ds|azahar|yuzu|sudachi|\beden|"
     r"suyu|skyline|sx2|drastic|melonds|mupen|redream|flycast|duckstation|"
     r"mame4droid|m64plus|nethersx2|armsx2|winlator|vita3k|cemu|steamdeck|"
-    r"hakux|xemu|x1box",
+    r"hakux|xemu|x1box|droiddeck",
     re.I,
 )
 # Never offer to remove these as "pre-installed emulators".
@@ -131,6 +131,11 @@ COMMON_SYSTEMS = [
 # says its GitHub releases are the only official download. Other "hakuX"
 # repos are forks or look-alikes.
 HAKUX_REPO = "rfandango/hakuX"
+
+# DroidDeck (Steam / PC games, SteamOS-style). Its README says to download it
+# only from Droid-Deck/DroidDeck's GitHub releases; droiddeck.org, .com and
+# .wiki are unofficial, and other GitHub "DroidDeck" repos are unrelated apps.
+DROIDDECK_REPO = "Droid-Deck/DroidDeck"
 
 EDEN_API = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases"
 STEAMDECK_REPO = "The412Banner/winlator-contents"
@@ -460,6 +465,12 @@ def choose_apk(name, names, sdk):
             return std[0]
         pool = [n for n in pool if "legacy" not in low[n]] or pool
 
+    if name == "droiddeck":
+        # DroidDeck also ships -antutu / -ludashi / -pubg copies of each
+        # release; the plain DroidDeck-<ver>.apk is the one its README links.
+        plain = [n for n in pool if not re.search(r"antutu|ludashi|pubg", low[n])]
+        pool = plain or pool
+
     # Generic: prefer non-Play-Store, arm64 / universal Android builds.
     pool.sort(key=lambda n: ("play" in low[n],
                              "arm64" not in low[n] and "aarch64" not in low[n]
@@ -601,6 +612,9 @@ APPS = [
         f"https://github.com/{HAKUX_REPO}/releases"),
     App("steamdeck", "SteamDeck", "Steam / PC games", r"steamdeck",
         latest_steamdeck, f"https://github.com/{STEAMDECK_REPO}/releases"),
+    App("droiddeck", "DroidDeck", "Steam / PC games", r"droiddeck",
+        lambda: latest_github("droiddeck", DROIDDECK_REPO),
+        f"https://github.com/{DROIDDECK_REPO}/releases"),
 ]
 APP_BY_KEY = {a.key: a for a in APPS}
 
@@ -1149,6 +1163,13 @@ CHECKLIST = """
     [ ] Open it > "Install Linux runtime" (~790 MB, one time - use Wi-Fi)
     [ ] Press Play; first launch downloads Steam, then sign in to your account
     [ ] Optional: Desktop & apps > install Desktop; point its ROMs folder at {sd}/ROMs
+    [ ] iiSU may list it under Android apps rather than as a console - that's expected
+
+  DroidDeck (SteamOS-style Steam + Proton, plus a Linux desktop)
+    [ ] Needs about 4 GB free (3 GB runtime + 1.1 GB desktop and emulators)
+    [ ] Android 14+: Developer options > turn on "Disable child process restrictions"
+    [ ] Open it > install the Linux runtime (use Wi-Fi), press Play, sign in to Steam
+    [ ] Android 12/13: on Steam's first launch, tap "Fix it for me" if it appears
     [ ] iiSU may list it under Android apps rather than as a console - that's expected
 
   PPSSPP
