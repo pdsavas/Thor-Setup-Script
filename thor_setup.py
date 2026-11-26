@@ -2,7 +2,7 @@
 """
 thor_setup.py - Setup helper for an AYN Thor Pro (or most Android handhelds),
 run from a PC over ADB. Based on the TechDweeb Android handheld guide, using
-the iiSU frontend, ARMSX2 (PS2), Eden (Switch), SteamDeck and DroidDeck (Steam + Proton).
+the iiSU frontend, ARMSX2 (PS2), Eden (Switch) and DroidDeck (Steam + Proton).
 
 Run it with no options for a KIAUH-style menu:
 
@@ -43,7 +43,7 @@ APK_DIR = HERE / "apks"
 BIOS_DIR = HERE / "bios"
 ROMS_DIR = HERE / "roms"
 STATE_FILE = HERE / ".thor_state.json"
-VERSION = "4.2"
+VERSION = "4.3"
 
 # =====================================================================
 #  Tweakables
@@ -137,9 +137,17 @@ HAKUX_REPO = "rfandango/hakuX"
 # .wiki are unofficial, and other GitHub "DroidDeck" repos are unrelated apps.
 DROIDDECK_REPO = "Droid-Deck/DroidDeck"
 
+# Obtainium keeps other apps up to date straight from their GitHub, F-Droid
+# etc. pages. Official downloads: ImranR98/Obtainium's GitHub releases.
+OBTAINIUM_REPO = "ImranR98/Obtainium"
+
+# JamesDSP audio effects. james34602/JamesDSPManager needs root (it's a Magisk
+# module), so this is RootlessJamesDSP, the same engine for unrooted devices.
+# Its GitHub releases have no APK; it's published on Google Play and F-Droid.
+JAMESDSP_REPO = "timschneeb/RootlessJamesDSP"
+JAMESDSP_PKG = "me.timschneeberger.rootlessjamesdsp"
+
 EDEN_API = "https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases"
-STEAMDECK_REPO = "The412Banner/winlator-contents"
-STEAMDECK_TAG = re.compile(r"^steamdeck-v?(\d+(?:\.\d+)*)$", re.I)
 
 UA = {"User-Agent": "thor-setup/" + VERSION}   # for APIs (GitHub, Forgejo)
 # Download pages (Dolphin, PPSSPP) may block unfamiliar clients, so look like a browser.
@@ -471,6 +479,10 @@ def choose_apk(name, names, sdk):
         plain = [n for n in pool if not re.search(r"antutu|ludashi|pubg", low[n])]
         pool = plain or pool
 
+    if name == "obtainium":
+        # Each release has a normal and an "fdroid" flavour; use the normal one.
+        pool = [n for n in pool if "fdroid" not in low[n]] or pool
+
     # Generic: prefer non-Play-Store, arm64 / universal Android builds.
     pool.sort(key=lambda n: ("play" in low[n],
                              "arm64" not in low[n] and "aarch64" not in low[n]
@@ -542,44 +554,14 @@ def latest_eden():
     raise RuntimeError("no stable release with an Android APK found")
 
 
-def pick_steamdeck(releases):
-    """From GitHub release JSON, return (version, asset) for the newest SteamDeck APK."""
-    best = None
-    for rel in releases:
-        m = STEAMDECK_TAG.match(rel.get("tag_name", ""))
-        if not m or rel.get("draft") or rel.get("prerelease"):
-            continue
-        apks = [a for a in rel.get("assets", []) if a["name"].lower().endswith(".apk")]
-        if not apks:
-            continue
-        ver = m.group(1)
-        # Releases can carry older APKs "for reference": prefer the one named for this tag.
-        asset = next((a for a in apks if ver in a["name"]), None)
-        if asset is None:
-            def apk_ver(a):
-                v = re.search(r"(\d+(?:\.\d+)+)", a["name"])
-                return _ver(v.group(1)) if v else (0,)
-            asset = max(apks, key=apk_ver)
-        if best is None or _ver(ver) > _ver(best[0]):
-            best = (ver, asset)
-    return best
-
-
-def latest_steamdeck():
-    # The repo also holds unrelated Winlator releases, so GitHub's "latest"
-    # can't be used; pick the highest-numbered release tagged "SteamDeck-<ver>".
-    releases = []
-    for page in range(1, 6):
-        batch = json.loads(http_get(
-            f"https://api.github.com/repos/{STEAMDECK_REPO}/releases?per_page=100&page={page}"))
-        releases += batch
-        if len(batch) < 100:
-            break
-    found = pick_steamdeck(releases)
-    if not found:
-        raise RuntimeError("no SteamDeck-<version> release with an APK found")
-    ver, asset = found
-    return Release(ver, asset["browser_download_url"], asset["name"])
+def latest_fdroid(pkg):
+    """The build F-Droid currently suggests for a package."""
+    data = json.loads(http_get(f"https://f-droid.org/api/v1/packages/{pkg}"))
+    code = data["suggestedVersionCode"]
+    name = next((p["versionName"] for p in data.get("packages", [])
+                 if p.get("versionCode") == code), str(code))
+    filename = f"{pkg}_{code}.apk"
+    return Release(name, f"https://f-droid.org/repo/{filename}", filename)
 
 
 class App:
@@ -610,11 +592,15 @@ APPS = [
     App("hakux", "hakuX", "Original Xbox", r"hakux",
         lambda: latest_github("hakux", HAKUX_REPO),
         f"https://github.com/{HAKUX_REPO}/releases"),
-    App("steamdeck", "SteamDeck", "Steam / PC games", r"steamdeck",
-        latest_steamdeck, f"https://github.com/{STEAMDECK_REPO}/releases"),
     App("droiddeck", "DroidDeck", "Steam / PC games", r"droiddeck",
         lambda: latest_github("droiddeck", DROIDDECK_REPO),
         f"https://github.com/{DROIDDECK_REPO}/releases"),
+    App("obtainium", "Obtainium", "App updates", r"obtainium",
+        lambda: latest_github("obtainium", OBTAINIUM_REPO),
+        f"https://github.com/{OBTAINIUM_REPO}/releases"),
+    App("jamesdsp", "JamesDSP", "Audio effects", r"jamesdsp",
+        lambda: latest_fdroid(JAMESDSP_PKG),
+        f"https://f-droid.org/packages/{JAMESDSP_PKG}/"),
 ]
 APP_BY_KEY = {a.key: a for a in APPS}
 
@@ -835,7 +821,10 @@ def fetch_apk(app, rel=None):
         say(c(f"    couldn't fetch automatically ({e}).", "red"))
         say(f"    Get it here: {app.page}  - put the APK in apks/ named {app.key}-<anything>.apk")
         return None
-    dest = APK_DIR / f"{app.key}-{rel.filename}"
+    name = rel.filename
+    if rel.version.lstrip("vV") not in name:   # e.g. Obtainium's app-arm64-v8a-release.apk
+        name = f"{rel.version}-{name}"
+    dest = APK_DIR / f"{app.key}-{name}"
     if dest.exists():
         say(f"    newest version ({rel.version}) already downloaded")
     else:
@@ -854,6 +843,19 @@ def fetch_apk(app, rel=None):
 
 def grant_storage(pkg):
     shell(f"appops set {pkg} MANAGE_EXTERNAL_STORAGE allow", check=False)
+
+
+def grant_jamesdsp(pkg):
+    """The permissions RootlessJamesDSP's own "ADB setup" screen asks for:
+    DUMP (to read the audio policy), overlay, and permanent audio capture."""
+    say("    granting JamesDSP's audio permissions over USB ...")
+    shell(f"pm grant {pkg} android.permission.DUMP", check=False)
+    shell(f"appops set {pkg} SYSTEM_ALERT_WINDOW allow", check=False)
+    shell(f"appops set {pkg} PROJECT_MEDIA allow", check=False)
+
+
+# Extra steps run after an app is installed or updated.
+AFTER_INSTALL = {"jamesdsp": grant_jamesdsp}
 
 
 def install_apk(path, label=None):
@@ -899,6 +901,8 @@ def install_app(app, offer_config=True):
     if not pkg:
         return False
     save_package(app.key, pkg)
+    if app.key in AFTER_INSTALL:
+        AFTER_INSTALL[app.key](pkg)
     if offer_config and app.configure and confirm(
             f"  Apply the guide's {app.name} settings now?", default=True):
         CONFIGURE[app.configure]()
@@ -1159,18 +1163,24 @@ CHECKLIST = """
     [ ] Optional: a game's menu > Convert to XISO makes a smaller copy
     [ ] iiSU has no Xbox console yet, so start Xbox games from hakuX itself
 
-  SteamDeck (Steam + Proton for Windows PC games)
-    [ ] Open it > "Install Linux runtime" (~790 MB, one time - use Wi-Fi)
-    [ ] Press Play; first launch downloads Steam, then sign in to your account
-    [ ] Optional: Desktop & apps > install Desktop; point its ROMs folder at {sd}/ROMs
-    [ ] iiSU may list it under Android apps rather than as a console - that's expected
-
   DroidDeck (SteamOS-style Steam + Proton, plus a Linux desktop)
     [ ] Needs about 4 GB free (3 GB runtime + 1.1 GB desktop and emulators)
     [ ] Android 14+: Developer options > turn on "Disable child process restrictions"
     [ ] Open it > install the Linux runtime (use Wi-Fi), press Play, sign in to Steam
     [ ] Android 12/13: on Steam's first launch, tap "Fix it for me" if it appears
     [ ] iiSU may list it under Android apps rather than as a console - that's expected
+
+  Obtainium (keeps apps up to date from their official pages)
+    [ ] Optional: Add App > paste an app's GitHub releases link (e.g. hakuX or
+        DroidDeck) to get update alerts on the Thor between Setup Helper runs
+    [ ] Let it post notifications so it can tell you about updates
+
+  JamesDSP (RootlessJamesDSP - system-wide audio effects / EQ)
+    [ ] The script already granted its permissions over USB; open it and finish setup
+    [ ] Allow "start recording or casting" if asked, then turn the effects on
+    [ ] Android 15+: Developer options > turn on "Disable screen share protections"
+    [ ] Some apps (Spotify, Chrome) block it, and it adds a little audio delay - turn
+        it off while gaming if sound feels late
 
   PPSSPP
     [ ] Choose PSP folder, browse to ROMs/psp; render res 4x; touch controls off
@@ -1255,6 +1265,8 @@ def step_install():
         key = apk.name.split("-", 1)[0].lower()
         if pkg and key in APP_BY_KEY:
             save_package(key, pkg)
+            if key in AFTER_INSTALL:
+                AFTER_INSTALL[key](pkg)
     for p in other_emulators() + [IISU_PKG]:
         grant_storage(p)
     if IISU_PKG not in installed_packages():

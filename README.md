@@ -3,7 +3,7 @@
 A setup helper for the **AYN Thor Pro** Android handheld that runs on your PC. Plug the Thor in over
 USB and use a menu (modelled on [KIAUH](https://github.com/dw-0/kiauh)) to:
 
-- install, update and remove emulators
+- install, update and remove emulators and a few helper apps
 - copy your games and BIOS files to the SD card
 - apply tuned emulator settings
 - set the **iiSU** frontend as the home screen
@@ -28,8 +28,9 @@ Snapdragon 8 Gen 2.
 | [ARMSX2](https://github.com/ARMSX2/ARMSX2) | PS2 | GitHub releases | the build for your Android version |
 | [Eden](https://eden-emu.dev) | Switch | git.eden-emu.dev | latest stable, Standard APK |
 | [hakuX](https://github.com/rfandango/hakuX) | Original Xbox | GitHub releases | latest APK |
-| [SteamDeck](https://github.com/The412Banner/winlator-contents) | Steam / Windows PC games | GitHub releases | newest `SteamDeck-<version>` release |
 | [DroidDeck](https://github.com/Droid-Deck/DroidDeck) | Steam / PC games, SteamOS-style | GitHub releases | latest APK (the plain one, not `-antutu`, `-ludashi` or `-pubg`) |
+| [Obtainium](https://github.com/ImranR98/Obtainium) | Update alerts for apps, from their official pages | GitHub releases | latest 64-bit APK (not the `fdroid` flavour) |
+| [JamesDSP](https://github.com/timschneeb/RootlessJamesDSP) | System-wide audio effects / EQ | F-Droid | RootlessJamesDSP, F-Droid's current build |
 
 Every app is downloaded fresh from its official source when you install or update it. This
 repository doesn't contain any APKs.
@@ -79,7 +80,7 @@ For full step-by-step instructions, see the
 
 ```
 ╔════════════════════════════════════════════════════════════════════════╗
-║                       AYN Thor Setup Helper 4.2                        ║
+║                       AYN Thor Setup Helper 4.3                        ║
 ╠════════════════════════════════════════════════════════════════════════╣
 ║ Device        AYN Thor - Android 13                                    ║
 ║ SD card       /storage/1A2B-3C4D - 409.0 GB free of 476.7 GB           ║
@@ -146,12 +147,24 @@ The original one-shot options still work, and passing any of them skips the menu
   ([iiSU #417](https://github.com/iisu-network/iiSU/issues/417)), choose it for PS2 by hand.
 - **hakuX** emulates the *original* Xbox, not the Xbox 360. It needs no BIOS. Games must be ISO or
   XISO files in `roms/xbox`. iiSU doesn't list original Xbox yet, so start those games from hakuX.
-- **SteamDeck** is early, single-developer software. After installing, open it, tap *Install Linux
-  runtime* (about 790 MB), then *Play* to download Steam and sign in.
 - **DroidDeck** is another way to play Steam and PC games, with a SteamOS-style Gaming Mode and
-  a Linux desktop. You can install it alongside SteamDeck or instead of it. It needs about 4 GB
+  a Linux desktop. It replaces SteamDeck, which was renamed DroidDeck; if SteamDeck is still on your
+  Thor, you can remove it in *Remove apps*. DroidDeck needs about 4 GB
   free. On Android 14 and newer, first turn on *Disable child process restrictions* in Developer
   options. Then open DroidDeck, install the Linux runtime, press *Play* and sign in to Steam.
+- **Obtainium** isn't needed for the Setup Helper, which already updates every app it installs.
+  It's useful on the Thor itself: add an app's GitHub releases link and Obtainium tells you when
+  there's an update, even when the Thor isn't plugged in to your PC.
+- **JamesDSP** is [RootlessJamesDSP](https://github.com/timschneeb/RootlessJamesDSP), the version of
+  JamesDSP for devices that aren't rooted.
+  [james34602/JamesDSPManager](https://github.com/james34602/JamesDSPManager) needs root (it's a
+  Magisk module), so the script doesn't install it. RootlessJamesDSP has no APK on GitHub, so the
+  script gets it from [F-Droid](https://f-droid.org/packages/me.timschneeberger.rootlessjamesdsp/).
+  The script grants the permissions it would otherwise ask you to set up with a computer. Apps that
+  block audio capture, such as Spotify and Chrome, aren't affected by it, and it adds a little audio
+  delay. On Android 15 and newer, turn on *Disable screen share protections* in Developer options.
+  If you installed it from Google Play, the script offers to replace that copy with F-Droid's,
+  because the two are signed differently.
 - **Eden** needs your own `prod.keys` and firmware installed from inside Eden.
 - If D-pad hotkeys don't work in RetroArch, change `DPAD` near the top of `thor_setup.py` to
   `"19", "20", "21", "22"` and reapply the RetroArch settings.
